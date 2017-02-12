@@ -68,6 +68,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
@@ -140,6 +141,9 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
 	/** The chain of operators executed by this task */
 	protected OperatorChain<OUT, OP> operatorChain;
+
+	/** CheckpointStreamFactory for each operator */
+	private IdentityHashMap<StreamOperator, CheckpointStreamFactory> operatorCheckpointStreamFactoryMap;
 
 	/** The configuration of this streaming task */
 	private StreamConfig configuration;
@@ -232,6 +236,11 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
 			operatorChain = new OperatorChain<>(this);
 			headOperator = operatorChain.getHeadOperator();
+
+			for (StreamOperator op : operatorChain.getAllOperators()) {
+				CheckpointStreamFactory factory = createCheckpointStreamFactory(op);
+				operatorCheckpointStreamFactoryMap.put(op, factory);
+			}
 
 			// task specific initialization
 			init();
@@ -1040,10 +1049,6 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 		private long startSyncPartNano;
 		private long startAsyncPartNano;
 
-		// ------------------------
-
-		private CheckpointStreamFactory streamFactory;
-
 		private final List<StreamStateHandle> nonPartitionedStates;
 		private final List<OperatorSnapshotResult> snapshotInProgressList;
 
@@ -1124,8 +1129,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 
 		private void checkpointStreamOperator(StreamOperator<?> op) throws Exception {
 			if (null != op) {
-				createStreamFactory(op);
-				snapshotNonPartitionableState(op);
+				CheckpointStreamFactory streamFactory = owner.operatorCheckpointStreamFactoryMap.get(op);
+				snapshotNonPartitionableState(op, streamFactory);
 
 				OperatorSnapshotResult snapshotInProgress = op.snapshotState(
 						checkpointMetaData.getCheckpointId(),
@@ -1140,13 +1145,8 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 			}
 		}
 
-		private void createStreamFactory(StreamOperator<?> operator) throws IOException {
-			String operatorId = owner.createOperatorIdentifier(operator, owner.configuration.getVertexID());
-			this.streamFactory = owner.stateBackend.createStreamFactory(owner.getEnvironment().getJobID(), operatorId);
-		}
-
 		//TODO deprecated code path
-		private void snapshotNonPartitionableState(StreamOperator<?> operator) throws Exception {
+		private void snapshotNonPartitionableState(StreamOperator<?> operator, CheckpointStreamFactory streamFactory) throws Exception {
 
 			StreamStateHandle stateHandle = null;
 
