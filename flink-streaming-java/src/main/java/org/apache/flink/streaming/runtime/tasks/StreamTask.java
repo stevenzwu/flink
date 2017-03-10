@@ -237,6 +237,7 @@ public abstract class StreamTask<OUT, OP extends StreamOperator<OUT>>
 			operatorChain = new OperatorChain<>(this);
 			headOperator = operatorChain.getHeadOperator();
 
+			operatorCheckpointStreamFactoryMap = new IdentityHashMap();
 			for (StreamOperator op : operatorChain.getAllOperators()) {
 				CheckpointStreamFactory factory = createCheckpointStreamFactory(op);
 				operatorCheckpointStreamFactoryMap.put(op, factory);
