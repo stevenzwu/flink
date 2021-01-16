@@ -21,6 +21,7 @@ package org.apache.flink.streaming.api.graph;
 import org.apache.flink.annotation.Internal;
 import org.apache.flink.api.dag.Transformation;
 import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.metrics.MetricGroup;
 
 import java.util.Collection;
 
@@ -84,5 +85,8 @@ public interface TransformationTranslator<OUT, T extends Transformation<OUT>> {
 
         /** Retrieves additional configuration for the graph generation process. */
         ReadableConfig getGraphGeneratorConfig();
+
+        /** Returns metrics */
+        MetricGroup getMetrics();
     }
 }

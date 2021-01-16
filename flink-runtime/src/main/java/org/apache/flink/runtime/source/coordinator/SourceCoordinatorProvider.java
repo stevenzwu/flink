@@ -22,6 +22,7 @@ import org.apache.flink.annotation.VisibleForTesting;
 import org.apache.flink.api.connector.source.Source;
 import org.apache.flink.api.connector.source.SourceSplit;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.coordination.OperatorCoordinator;
 import org.apache.flink.runtime.operators.coordination.RecreateOnResetOperatorCoordinator;
@@ -40,6 +41,7 @@ public class SourceCoordinatorProvider<SplitT extends SourceSplit>
     private final String operatorName;
     private final Source<?, SplitT, ?> source;
     private final int numWorkerThreads;
+    private final MetricGroup metrics;
 
     /**
      * Construct the {@link SourceCoordinatorProvider}.
@@ -56,11 +58,13 @@ public class SourceCoordinatorProvider<SplitT extends SourceSplit>
             String operatorName,
             OperatorID operatorID,
             Source<?, SplitT, ?> source,
-            int numWorkerThreads) {
+            int numWorkerThreads,
+            MetricGroup metrics) {
         super(operatorID);
         this.operatorName = operatorName;
         this.source = source;
         this.numWorkerThreads = numWorkerThreads;
+        this.metrics = metrics;
     }
 
     @Override
@@ -79,6 +83,7 @@ public class SourceCoordinatorProvider<SplitT extends SourceSplit>
                         coordinatorThreadFactory,
                         numWorkerThreads,
                         context,
+                        metrics,
                         splitSerializer);
         return new SourceCoordinator<>(
                 operatorName, coordinatorExecutor, source, sourceCoordinatorContext);

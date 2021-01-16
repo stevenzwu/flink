@@ -26,6 +26,7 @@ import org.apache.flink.api.connector.source.SourceReaderContext;
 import org.apache.flink.api.connector.source.SourceSplit;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.core.io.SimpleVersionedSerializer;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.jobgraph.OperatorID;
 import org.apache.flink.runtime.operators.coordination.OperatorCoordinator;
 import org.apache.flink.runtime.operators.coordination.OperatorEventGateway;
@@ -51,29 +52,34 @@ public class SourceOperatorFactory<OUT> extends AbstractStreamOperatorFactory<OU
     /** Whether to emit intermediate watermarks or only one final watermark at the end of input. */
     private final boolean emitProgressiveWatermarks;
 
+    private final MetricGroup metrics;
+
     /** The number of worker thread for the source coordinator. */
     private final int numCoordinatorWorkerThread;
 
     public SourceOperatorFactory(
             Source<OUT, ?, ?> source, WatermarkStrategy<OUT> watermarkStrategy) {
-        this(source, watermarkStrategy, true /* emit progressive watermarks */, 1);
-    }
-
-    public SourceOperatorFactory(
-            Source<OUT, ?, ?> source,
-            WatermarkStrategy<OUT> watermarkStrategy,
-            boolean emitProgressiveWatermarks) {
-        this(source, watermarkStrategy, emitProgressiveWatermarks, 1);
+        this(source, watermarkStrategy, true /* emit progressive watermarks */, null, 1);
     }
 
     public SourceOperatorFactory(
             Source<OUT, ?, ?> source,
             WatermarkStrategy<OUT> watermarkStrategy,
             boolean emitProgressiveWatermarks,
+            MetricGroup metrics) {
+        this(source, watermarkStrategy, emitProgressiveWatermarks, metrics, 1);
+    }
+
+    public SourceOperatorFactory(
+            Source<OUT, ?, ?> source,
+            WatermarkStrategy<OUT> watermarkStrategy,
+            boolean emitProgressiveWatermarks,
+            MetricGroup metrics,
             int numCoordinatorWorkerThread) {
         this.source = checkNotNull(source);
         this.watermarkStrategy = checkNotNull(watermarkStrategy);
         this.emitProgressiveWatermarks = emitProgressiveWatermarks;
+        this.metrics = checkNotNull(metrics);
         this.numCoordinatorWorkerThread = numCoordinatorWorkerThread;
     }
 
@@ -124,7 +130,7 @@ public class SourceOperatorFactory<OUT> extends AbstractStreamOperatorFactory<OU
     public OperatorCoordinator.Provider getCoordinatorProvider(
             String operatorName, OperatorID operatorID) {
         return new SourceCoordinatorProvider<>(
-                operatorName, operatorID, source, numCoordinatorWorkerThread);
+                operatorName, operatorID, source, numCoordinatorWorkerThread, metrics);
     }
 
     @SuppressWarnings("rawtypes")

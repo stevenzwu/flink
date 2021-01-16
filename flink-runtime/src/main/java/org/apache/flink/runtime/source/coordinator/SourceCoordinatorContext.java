@@ -89,6 +89,7 @@ public class SourceCoordinatorContext<SplitT extends SourceSplit>
     private final ExecutorService coordinatorExecutor;
     private final ExecutorNotifier notifier;
     private final OperatorCoordinator.Context operatorCoordinatorContext;
+    private final MetricGroup metrics;
     private final SimpleVersionedSerializer<SplitT> splitSerializer;
     private final ConcurrentMap<Integer, ReaderInfo> registeredReaders;
     private final SplitAssignmentTracker<SplitT> assignmentTracker;
@@ -101,12 +102,14 @@ public class SourceCoordinatorContext<SplitT extends SourceSplit>
             SourceCoordinatorProvider.CoordinatorExecutorThreadFactory coordinatorThreadFactory,
             int numWorkerThreads,
             OperatorCoordinator.Context operatorCoordinatorContext,
+            MetricGroup metrics,
             SimpleVersionedSerializer<SplitT> splitSerializer) {
         this(
                 coordinatorExecutor,
                 coordinatorThreadFactory,
                 numWorkerThreads,
                 operatorCoordinatorContext,
+                metrics,
                 splitSerializer,
                 new SplitAssignmentTracker<>());
     }
@@ -117,11 +120,13 @@ public class SourceCoordinatorContext<SplitT extends SourceSplit>
             SourceCoordinatorProvider.CoordinatorExecutorThreadFactory coordinatorThreadFactory,
             int numWorkerThreads,
             OperatorCoordinator.Context operatorCoordinatorContext,
+            MetricGroup metrics,
             SimpleVersionedSerializer<SplitT> splitSerializer,
             SplitAssignmentTracker<SplitT> splitAssignmentTracker) {
         this.coordinatorExecutor = coordinatorExecutor;
         this.coordinatorThreadFactory = coordinatorThreadFactory;
         this.operatorCoordinatorContext = operatorCoordinatorContext;
+        this.metrics = metrics;
         this.splitSerializer = splitSerializer;
         this.registeredReaders = new ConcurrentHashMap<>();
         this.assignmentTracker = splitAssignmentTracker;
@@ -143,7 +148,7 @@ public class SourceCoordinatorContext<SplitT extends SourceSplit>
 
     @Override
     public MetricGroup metricGroup() {
-        return null;
+        return metrics;
     }
 
     @Override

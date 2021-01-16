@@ -28,6 +28,7 @@ import org.apache.flink.api.java.tuple.Tuple2;
 import org.apache.flink.configuration.Configuration;
 import org.apache.flink.configuration.ExecutionOptions;
 import org.apache.flink.configuration.ReadableConfig;
+import org.apache.flink.metrics.MetricGroup;
 import org.apache.flink.runtime.jobgraph.SavepointRestoreSettings;
 import org.apache.flink.runtime.jobgraph.ScheduleMode;
 import org.apache.flink.runtime.state.KeyGroupRangeAssignment;
@@ -145,6 +146,8 @@ public class StreamGraphGenerator {
 
     private String jobName = DEFAULT_JOB_NAME;
 
+    private MetricGroup metrics;
+
     private SavepointRestoreSettings savepointRestoreSettings = SavepointRestoreSettings.none();
 
     private long defaultBufferTimeout = StreamingJobGraphGenerator.UNDEFINED_NETWORK_BUFFER_TIMEOUT;
@@ -251,6 +254,11 @@ public class StreamGraphGenerator {
 
     public StreamGraphGenerator setJobName(String jobName) {
         this.jobName = jobName;
+        return this;
+    }
+
+    public StreamGraphGenerator setMetrics(MetricGroup metrics) {
+        this.metrics = metrics;
         return this;
     }
 
@@ -664,7 +672,7 @@ public class StreamGraphGenerator {
                                 .collect(Collectors.toList()));
 
         final TransformationTranslator.Context context =
-                new ContextImpl(this, streamGraph, slotSharingGroup, configuration);
+                new ContextImpl(this, streamGraph, slotSharingGroup, configuration, metrics);
 
         return shouldExecuteInBatchMode
                 ? translator.translateForBatch(transform, context)
@@ -732,15 +740,19 @@ public class StreamGraphGenerator {
 
         private final ReadableConfig config;
 
+        private final MetricGroup metrics;
+
         public ContextImpl(
                 final StreamGraphGenerator streamGraphGenerator,
                 final StreamGraph streamGraph,
                 final String slotSharingGroup,
-                final ReadableConfig config) {
+                final ReadableConfig config,
+                final MetricGroup metrics) {
             this.streamGraphGenerator = checkNotNull(streamGraphGenerator);
             this.streamGraph = checkNotNull(streamGraph);
             this.slotSharingGroup = checkNotNull(slotSharingGroup);
             this.config = checkNotNull(config);
+            this.metrics = checkNotNull(metrics);
         }
 
         @Override
@@ -772,6 +784,11 @@ public class StreamGraphGenerator {
         @Override
         public ReadableConfig getGraphGeneratorConfig() {
             return config;
+        }
+
+        @Override
+        public MetricGroup getMetrics() {
+            return metrics;
         }
     }
 }
