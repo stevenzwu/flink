@@ -22,6 +22,7 @@ import org.apache.flink.annotation.PublicEvolving;
 import org.apache.flink.api.common.typeinfo.TypeInformation;
 import org.apache.flink.api.java.typeutils.ResultTypeQueryable;
 import org.apache.flink.configuration.Configuration;
+import org.apache.flink.connector.file.src.CheckpointableSourceSplit;
 import org.apache.flink.connector.file.src.FileSourceSplit;
 import org.apache.flink.connector.file.src.util.MutableRecordAndPosition;
 import org.apache.flink.connector.file.src.util.RecordAndPosition;
@@ -38,9 +39,10 @@ import java.io.Serializable;
  *
  * <p>The outer {@code 'BulkFormat'} class acts mainly as a configuration holder and factory for the
  * reader. The actual reading is done by the {@link BulkFormat.Reader}, which is created in the
- * {@link BulkFormat#createReader(Configuration, FileSourceSplit)} method. If a bulk reader is
- * created based on a checkpoint during checkpointed streaming execution, then the reader is
- * re-created in the {@link BulkFormat#restoreReader(Configuration, FileSourceSplit)} method.
+ * {@link BulkFormat#createReader(Configuration, CheckpointableSourceSplit)} method. If a bulk
+ * reader is created based on a checkpoint during checkpointed streaming execution, then the reader
+ * is re-created in the {@link BulkFormat#restoreReader(Configuration, CheckpointableSourceSplit)}
+ * method.
  *
  * <h2>Splitting</h2>
  *
@@ -93,7 +95,7 @@ import java.io.Serializable;
  * is handed over as one.
  */
 @PublicEvolving
-public interface BulkFormat<T, SplitT extends FileSourceSplit>
+public interface BulkFormat<T, SplitT extends CheckpointableSourceSplit>
         extends Serializable, ResultTypeQueryable<T> {
 
     /**

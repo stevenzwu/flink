@@ -49,7 +49,7 @@ import static org.apache.flink.util.Preconditions.checkNotNull;
  * for RPC and for checkpoints), the {@link FileSourceSplitSerializer} is used.
  */
 @PublicEvolving
-public class FileSourceSplit implements SourceSplit, Serializable {
+public class FileSourceSplit implements CheckpointableSourceSplit, Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -194,6 +194,7 @@ public class FileSourceSplit implements SourceSplit, Serializable {
      * splits when assigned from the enumerator to the readers, and present when the splits are
      * recovered from a checkpoint.
      */
+    @Override
     public Optional<CheckpointedPosition> getReaderPosition() {
         return Optional.ofNullable(readerPosition);
     }
